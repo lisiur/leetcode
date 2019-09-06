@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import requests
@@ -64,6 +65,7 @@ if __name__ == '__main__':
 
     code_snippets = question_data.get('codeSnippets')
     sample_test_case = question_data.get('sampleTestCase')
+    translated_title = question_data.get('translatedTitle')
     translated_content = question_data.get('translatedContent')
     meta_data = question_data.get('metaData')
 
@@ -72,11 +74,16 @@ if __name__ == '__main__':
     pascal_function_name = function_name[0].upper() + function_name[1:]
     directory_name = title_slug.replace('-', '_')
 
-    test_template = "import unittest\nfrom solutions.{directory_name}.solution import Solution\n\n\nclass Test{pascal_function_name}(unittest.TestCase):\n\n    def test_1(self):\n        u_input = {{\n        }}\n        u_output = ()\n\n        solution = Solution()\n        u_result = solution.{function_name}(**u_input)\n        self.assertEqual(u_result, u_output)\n\n\nif __name__ == '__main__':\n    unittest.main()\n".format_map(vars())
+    test_template = "import unittest\nfrom solutions.{directory_name}.solution import Solution\n\n\nclass Test{pascal_function_name}(unittest.TestCase):\n\n    def test_1(self):\n        u_input = {{\n        }}\n        u_output = ()\n\n        solution = Solution()\n        u_result = solution.{function_name}(**u_input)\n        self.assertEqual(u_output, u_result)\n\n\nif __name__ == '__main__':\n    unittest.main()\n".format_map(vars())
 
     context = os.getcwd()
     solution_file_path = context + '/solutions'
     test_directory = context + '/tests'
+    md_file_content = '<h1><a href="{url}">{translated_title}</a></h1>\n\n{translated_content}'.format_map(vars())
+
+    source_file_content = python_template + '\n        pass\n'
+    if re.search(r': List', python_template):
+        source_file_content = 'from typing import List\n\n\n{source_file_content}'.format_map(vars())
     params = {
 
         'solution_init_file_path': solution_file_path + '/__init__.py',
@@ -86,10 +93,10 @@ if __name__ == '__main__':
         'init_file_content': '\n',
 
         'source_file_path': solution_file_path + '/' + directory_name + '/solution.py',
-        'source_file_content': python_template,
+        'source_file_content': source_file_content,
 
         'md_file_path': solution_file_path + '/' + directory_name + '/README.md',
-        'md_file_content': translated_content,
+        'md_file_content': md_file_content,
 
         'test_file_path': test_directory + '/test_' + directory_name + '.py',
         'test_file_content': test_template,
